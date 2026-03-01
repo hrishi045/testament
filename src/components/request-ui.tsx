@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useReducer } from "react";
 import { ButtonGroup } from "./ui/button-group";
 import { Button } from "./ui/button";
 import {
@@ -14,52 +14,138 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "./ui/input-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui/resizable";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { Label } from "./ui/label";
 
 const methods = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 
 declare global {
   interface Window {
     electron: {
-      makeHttpRequest: (method: string, url: string) => Promise<any>;
+      makeHttpRequest: (
+        method: string,
+        url: string,
+        headers?: Record<string, string>,
+      ) => Promise<any>;
     };
   }
 }
 
-export default function RequestUI() {
-  const [method, setMethod] = React.useState("GET");
-  const [url, setUrl] = React.useState("");
+type RequestUIProps = {
+  method: string;
+  url: string;
+  headers?: Record<string, string>;
+  body?: string;
+};
+
+type RequestState = {
+  method: string;
+  url: string;
+  headers?: Record<string, string>;
+  body?: string;
+};
+
+type RequestAction =
+  | { type: "setMethod"; payload: string }
+  | { type: "setUrl"; payload: string }
+  | { type: "setHeaders"; payload: Record<string, string> }
+  | { type: "setBody"; payload: string }
+  | { type: "reset" };
+
+const requestReducer = (state: RequestState, action: RequestAction): RequestState => {
+  switch (action.type) {
+    case "setMethod":
+      return { ...state, method: action.payload };
+    case "setUrl":
+      return { ...state, url: action.payload };
+    case "setHeaders":
+      return { ...state, headers: action.payload };
+    case "setBody":
+      return { ...state, body: action.payload };
+    case "reset":
+      return {
+        method: "GET",
+        url: "",
+        headers: {},
+        body: "",
+      };
+    default:
+      return state;
+  }
+};
+
+type ResponseState = {
+  status: number;
+  headers: Record<string, string>;
+  body: string;
+  error?: string;
+};
+
+type ResponseAction =
+  | { type: "setResponseData"; payload: Partial<ResponseState> }
+  | { type: "reset" };
+
+const responseReducer = (state: ResponseState, action: ResponseAction): ResponseState => {
+  switch (action.type) {
+    case "setResponseData":
+      return { ...state, ...action.payload };
+    case "reset":
+      return {
+        status: 0,
+        headers: {},
+        body: "",
+        error: undefined,
+      };
+    default:
+      return state;
+  }
+};
+
+export default function RequestUI(props: RequestUIProps) {
   const [makingRequest, setMakingRequest] = React.useState(false);
-  const [responseBody, setResponseBody] = React.useState("");
-  const [responseHeaders, setResponseHeaders] = React.useState<Record<string, string>>({});
-  const [statusCode, setStatusCode] = React.useState("");
-  const [error, setError] = React.useState("");
   const [isHTMLPage, setIsHTMLPage] = React.useState(false);
   const iframeDoc = React.useRef<HTMLIFrameElement>(null);
 
-  React.useEffect(() => {
-    if (!makingRequest) {
-      if (iframeDoc.current && url && url.startsWith("http") && isHTMLPage) {
-        const doc = iframeDoc.current.contentDocument || iframeDoc.current.contentWindow?.document;
-        if (doc) {
-          doc.open();
-          iframeDoc.current.srcdoc = responseBody;
-          doc.close();
-        }
-      }
-    }
-  }, [makingRequest]);
+  const [request, requestDispatch] = useReducer(requestReducer, {
+    method: "GET",
+    url: "",
+    headers: {},
+    body: "",
+  });
+
+  const [response, responseDispatch] = useReducer(responseReducer, {
+    status: 0,
+    headers: {},
+    body: "",
+    error: undefined,
+  });
+
+  useEffect(() => {
+    requestDispatch({
+      type: "setMethod",
+      payload: props.method,
+    });
+    requestDispatch({
+      type: "setUrl",
+      payload: props.url,
+    });
+    requestDispatch({
+      type: "setHeaders",
+      payload: props.headers,
+    });
+    requestDispatch({
+      type: "setBody",
+      payload: props.body,
+    });
+  }, []);
 
   const handleSendRequest = async () => {
     setMakingRequest(true);
 
     try {
-      const response = await window.electron.makeHttpRequest(method, url);
-      const { status, headers, body } = JSON.parse(response);
+      const res = await window.electron.makeHttpRequest(request.method, request.url);
+      const { status_code: status, headers, body } = JSON.parse(res);
 
-      setResponseBody(body);
-      setResponseHeaders(headers);
-      setStatusCode(status);
-      setError("");
+      responseDispatch({ type: "setResponseData", payload: { status, headers, body, error: "" } });
 
       if (
         (headers["content-type"] && headers["content-type"].includes("text/html")) ||
@@ -70,20 +156,43 @@ export default function RequestUI() {
         setIsHTMLPage(false);
       }
     } catch (err) {
-      setError(`Error: ${err}`);
-      setResponseBody("");
-      setResponseHeaders({});
-      setStatusCode("");
+      responseDispatch({
+        type: "setResponseData",
+        payload: { error: `Error: ${err}`, status: 0, headers: {}, body: "" },
+      });
       setIsHTMLPage(false);
     } finally {
       setMakingRequest(false);
     }
   };
 
+  function colorBasedOnStatus(status: number) {
+    if (status == 0) {
+      return "text-gray-500 dark:text-gray-400";
+    }
+    if (status >= 200 && status < 300) {
+      return "text-green-500 dark:text-green-300";
+    }
+    if (status >= 300 && status < 400) {
+      return "text-yellow-500 dark:text-yellow-300";
+    }
+    if (status >= 400 && status < 500) {
+      return "text-red-500 dark:text-red-300";
+    }
+    if (status >= 500) {
+      return "text-red-700 dark:text-red-400";
+    }
+    return "";
+  }
+
   return (
     <div className="max-w-7xl mx-auto p-8">
       <ButtonGroup className="flex w-full">
-        <Combobox items={methods} onValueChange={(value) => setMethod(value)} value={method}>
+        <Combobox
+          items={methods}
+          onValueChange={(value) => requestDispatch({ type: "setMethod", payload: value })}
+          value={request.method}
+        >
           <ComboboxInput placeholder="Select Method" />
           <ComboboxContent>
             <ComboboxEmpty>No methods found.</ComboboxEmpty>
@@ -99,8 +208,8 @@ export default function RequestUI() {
         <InputGroup>
           <InputGroupInput
             placeholder="Enter URL"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
+            value={request.url}
+            onChange={(e) => requestDispatch({ type: "setUrl", payload: e.target.value })}
           />
           <InputGroupAddon align="inline-end">Valid URL</InputGroupAddon>
         </InputGroup>
@@ -113,9 +222,15 @@ export default function RequestUI() {
         <ResizablePanel className="p-4 pl-1">
           <Tabs defaultValue="body">
             <TabsList variant="line">
-              <TabsTrigger value="body">Body</TabsTrigger>
-              <TabsTrigger value="headers">Headers</TabsTrigger>
-              <TabsTrigger value="query">Query Params</TabsTrigger>
+              <TabsTrigger className="cursor-pointer" value="body">
+                Body
+              </TabsTrigger>
+              <TabsTrigger className="cursor-pointer" value="headers">
+                Headers
+              </TabsTrigger>
+              <TabsTrigger className="cursor-pointer" value="query">
+                Query Params
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="body">
               <Textarea placeholder="Request Body" className="mt-4 min-h-72 max-h-72 font-mono" />
@@ -140,18 +255,31 @@ export default function RequestUI() {
         <ResizableHandle />
         <ResizablePanel className="p-4 pr-1">
           <Tabs defaultValue="body-response">
-            <TabsList variant="line">
-              <TabsTrigger value="body-response">Body</TabsTrigger>
-              <TabsTrigger value="headers-response">Headers</TabsTrigger>
-              {isHTMLPage && <TabsTrigger value="preview">Preview</TabsTrigger>}
-            </TabsList>
+            <div className="flex justify-between">
+              <TabsList variant="line">
+                <TabsTrigger className="cursor-pointer" value="body-response">
+                  Body
+                </TabsTrigger>
+                <TabsTrigger className="cursor-pointer" value="headers-response">
+                  Headers
+                </TabsTrigger>
+                {isHTMLPage && (
+                  <TabsTrigger className="cursor-pointer" value="preview">
+                    Preview
+                  </TabsTrigger>
+                )}
+              </TabsList>
+              <Label className={"font-mono text-sm " + colorBasedOnStatus(response.status)}>
+                {`Status: ${response.status}`}
+              </Label>
+            </div>
 
             <TabsContent value="body-response">
               <Textarea
                 placeholder="Response Body"
-                value={responseBody || error}
+                value={response.body || response.error}
                 readOnly
-                className={`mt-4 min-h-72 max-h-72 font-mono ${error ? "text-red-500 dark:text-red-300" : ""}`}
+                className={`mt-4 min-h-72 max-h-72 font-mono ${response.error ? "text-red-500 dark:text-red-300" : ""}`}
               />
             </TabsContent>
             <TabsContent value="headers-response">
@@ -163,7 +291,7 @@ export default function RequestUI() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {Object.entries(responseHeaders).map(([key, value]) => (
+                  {Object.entries(response.headers).map(([key, value]) => (
                     <TableRow key={key}>
                       <TableCell className="font-mono">{key || " "}</TableCell>
                       {/* split every 30 chars */}
@@ -182,9 +310,9 @@ export default function RequestUI() {
             {isHTMLPage && (
               <TabsContent value="preview">
                 <iframe
-                  // srcDoc={responseBody}
                   ref={iframeDoc}
                   title="HTML Preview"
+                  srcDoc={response.body}
                   className="mt-4 w-full h-100 bg-white"
                 />
               </TabsContent>
