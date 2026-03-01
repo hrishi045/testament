@@ -158,5 +158,6 @@
   
   .draggable-titlebar {
     app-region: drag;
+    user-select: none;
   }
 }
