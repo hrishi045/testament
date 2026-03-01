@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext"
+  },
+  "include": [
+    "src/main.ts",
+    "src/preload.ts",
+    "forge.config.ts",
+    "vite.main.config.ts",
+    "vite.preload.config.ts"
+  ]
+}

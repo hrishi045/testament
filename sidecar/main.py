@@ -1,5 +1,6 @@
 import typer
 import httpx
+import json
 
 app = typer.Typer()
 client = httpx.Client(http2=True)
@@ -9,10 +10,21 @@ client = httpx.Client(http2=True)
 def request(url: str, method: str = "GET"):
     try:
         response = client.request(method, url)
-        print(f"Status Code: {response.status_code}")
-        print(f"Response Body: {response.text}")
+        print(
+            json.dumps(
+                {
+                    "status_code": response.status_code,
+                    "headers": dict(response.headers),
+                    "body": response.text,
+                }
+            )
+        )
     except httpx.RequestError as exc:
-        print(f"An error occurred while requesting {exc.request.url!r}.")
+        print(
+            json.dumps(
+                {"error": f"An error occurred while requesting {exc.request.url!r}."}
+            )
+        )
 
 
 @app.command()
