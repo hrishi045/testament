@@ -3,7 +3,7 @@ import { ModeToggle } from "./mode-toggle";
 
 export default function MainMenu() {
   return (
-    <Menubar className="w-full">
+    <Menubar className="draggable-titlebar w-full">
       <MenubarMenu>
         <MenubarTrigger>File</MenubarTrigger>
       </MenubarMenu>

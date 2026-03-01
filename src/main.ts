@@ -15,6 +15,10 @@ const createWindow = () => {
   const mainWindow = new BrowserWindow({
     width: 1600,
     height: 900,
+    // frame: false,
+    // transparent: true,
+    titleBarStyle: "hidden",
+    ...(process.platform !== "darwin" ? { titleBarOverlay: true } : {}),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       sandbox: false,
