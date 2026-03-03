@@ -1,43 +1,63 @@
 import { create } from "zustand";
 
 interface OpenRequest {
+  id: string;
   name: string;
   method: string;
   url: string;
   headers?: Record<string, string>;
   parameters?: Record<string, string>;
   body?: string;
+  beingEdited?: boolean;
 }
 
 interface OpenRequests {
   requests: OpenRequest[];
-  activeRequestName: string | null;
+  activeRequestId: string | null;
 
-  addRequest: (request: OpenRequest) => void;
+  addRequest: (request: Partial<OpenRequest>) => void;
   removeRequest: (index: number) => void;
   clearRequests: () => void;
-  setActiveRequestName: (name: string | null) => void;
+  setActiveRequestId: (id: string | null) => void;
+  changeName: (index: number, newName: string) => void;
+  setBeingEdited: (index: number, beingEdited: boolean) => void;
 }
 
 const useOpenRequestsStore = create<OpenRequests>()((set) => ({
   requests: [],
-  activeRequestName: null,
-  addRequest: (request: OpenRequest) =>
+  activeRequestId: null,
+  addRequest: (request: OpenRequest) => {
+    const id = crypto.randomUUID();
     set((state) => ({
-      requests: [...state.requests, request],
-      activeRequestName: request.name,
-    })),
+      requests: [...state.requests, { ...request, id }],
+      activeRequestId: id,
+    }));
+  },
   removeRequest: (index: number) =>
     set((state) => {
       return {
         requests: state.requests.filter((_, i) => i !== index),
-        activeRequestName:
-          state.activeRequestName === state.requests[index].name ? null : state.activeRequestName,
+        activeRequestId:
+          state.activeRequestId === state.requests[index].name ? null : state.activeRequestId,
       };
     }),
-  clearRequests: () => set({ requests: [], activeRequestName: null }),
-  setActiveRequestName: (name: string | null) => {
-    set({ activeRequestName: name });
+  clearRequests: () => set({ requests: [], activeRequestId: null }),
+  setActiveRequestId: (id: string | null) => {
+    set({ activeRequestId: id });
+  },
+  changeName: (index: number, newName: string) => {
+    set((state) => {
+      const updatedRequests = [...state.requests];
+      updatedRequests[index].name = newName;
+      return { requests: updatedRequests };
+    });
+  },
+  setBeingEdited: (index: number, beingEdited: boolean) => {
+    set((state) => {
+      const updatedRequests = [...state.requests];
+      updatedRequests[index].beingEdited = beingEdited;
+      return { requests: updatedRequests };
+    });
   },
 }));
 

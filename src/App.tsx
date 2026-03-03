@@ -7,17 +7,20 @@ import useOpenRequestsStore from "./stores/use-open-requests";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Button } from "./components/ui/button";
 import { PlusIcon } from "lucide-react";
+import EditableTabsTrigger from "./components/editable-tabs-trigger";
 
 function App() {
   const openRequests = useOpenRequestsStore(
     useShallow((state) => ({
       requests: state.requests,
-      activeRequestIndex: state.activeRequestName,
+      activeRequestId: state.activeRequestId,
 
       addRequest: state.addRequest,
       removeRequest: state.removeRequest,
       clearRequests: state.clearRequests,
-      setActiveRequestName: state.setActiveRequestName,
+      setActiveRequestId: state.setActiveRequestId,
+      changeName: state.changeName,
+      setBeingEdited: state.setBeingEdited,
     })),
   );
 
@@ -46,18 +49,20 @@ function App() {
       <div className="App">
         <MainMenu />
         <Tabs
-          value={openRequests.activeRequestIndex}
+          value={openRequests.activeRequestId}
           onValueChange={(value) => {
             console.log("Active request index changed to:", value);
-            openRequests.setActiveRequestName(value);
+            openRequests.setActiveRequestId(value);
           }}
         >
           <div className="flex">
             <TabsList variant="line" className="bg-transparent border-b-2 h-12 px-4">
-              {openRequests.requests.map((request) => (
-                <TabsTrigger key={request.name} value={request.name}>
-                  {request.name}
-                </TabsTrigger>
+              {openRequests.requests.map((request, index) => (
+                <EditableTabsTrigger
+                  id={request.id}
+                  name={request.name}
+                  onChange={(newName) => openRequests.changeName(index, newName)}
+                />
               ))}
             </TabsList>
             <Button onClick={() => createNewRequest()} variant="default">
@@ -66,7 +71,7 @@ function App() {
             </Button>
           </div>
           {openRequests.requests.map((request) => (
-            <TabsContent keepMounted={true} key={request.name} value={request.name}>
+            <TabsContent keepMounted={true} key={request.id} value={request.id}>
               <RequestUI method={request.method} url={request.url} />
             </TabsContent>
           ))}
