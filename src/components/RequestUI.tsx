@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui/resizable";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Label } from "./ui/label";
+import { PlusIcon } from "lucide-react";
 
 const methods = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 
@@ -100,16 +101,16 @@ const responseReducer = (state: ResponseState, action: ResponseAction): Response
   }
 };
 
-export default function RequestUI(props: RequestUIProps) {
+export default function RequestUI({ method, url, headers, body }: RequestUIProps) {
   const [makingRequest, setMakingRequest] = React.useState(false);
   const [isHTMLPage, setIsHTMLPage] = React.useState(false);
   const iframeDoc = React.useRef<HTMLIFrameElement>(null);
 
   const [request, requestDispatch] = useReducer(requestReducer, {
-    method: "GET",
-    url: "",
-    headers: {},
-    body: "",
+    method: method,
+    url: url,
+    headers: headers,
+    body: body,
   });
 
   const [response, responseDispatch] = useReducer(responseReducer, {
@@ -118,25 +119,6 @@ export default function RequestUI(props: RequestUIProps) {
     body: "",
     error: undefined,
   });
-
-  useEffect(() => {
-    requestDispatch({
-      type: "setMethod",
-      payload: props.method,
-    });
-    requestDispatch({
-      type: "setUrl",
-      payload: props.url,
-    });
-    requestDispatch({
-      type: "setHeaders",
-      payload: props.headers,
-    });
-    requestDispatch({
-      type: "setBody",
-      payload: props.body,
-    });
-  }, []);
 
   const handleSendRequest = async () => {
     setMakingRequest(true);
@@ -185,6 +167,8 @@ export default function RequestUI(props: RequestUIProps) {
     return "";
   }
 
+  console.log(request);
+
   return (
     <div className="max-w-7xl mx-auto p-8">
       <ButtonGroup className="flex w-full">
@@ -210,6 +194,11 @@ export default function RequestUI(props: RequestUIProps) {
             placeholder="Enter URL"
             value={request.url}
             onChange={(e) => requestDispatch({ type: "setUrl", payload: e.target.value })}
+            onKeyDown={async (e) => {
+              if (e.ctrlKey && e.key === "Enter") {
+                await handleSendRequest();
+              }
+            }}
           />
           <InputGroupAddon align="inline-end">Valid URL</InputGroupAddon>
         </InputGroup>
@@ -239,10 +228,48 @@ export default function RequestUI(props: RequestUIProps) {
               </p>
             </TabsContent>
             <TabsContent value="headers">
-              <Textarea
-                placeholder="Request Headers"
-                className="mt-4 min-h-72 max-h-72 font-mono"
-              />
+              <Table className="inline-block">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-50">Header</TableHead>
+                    <TableHead>Value</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {request.headers && Object.entries(request.headers).map(([key, value]) => (
+                    <TableRow key={key}>
+                      <TableCell className="font-mono" contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => {
+                        const newKey = e.currentTarget.textContent || "";
+                        const newHeaders = { ...request.headers };
+                        delete newHeaders[key];
+                        newHeaders[newKey] = value;
+                        requestDispatch({
+                          type: "setHeaders",
+                          payload: newHeaders,
+                        });
+                      }}>
+                        {key}
+                      </TableCell>
+                      <TableCell className="font-mono text-pretty" contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => {
+                        const newHeaders = e.currentTarget.textContent || "";
+                        requestDispatch({
+                          type: "setHeaders",
+                          payload: { ...request.headers, [key]: newHeaders },
+                        });
+                      }}>
+                        {value}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <Button variant="secondary" onClick={() => {
+                    const newHeaders = { ...request.headers, "": "" };
+                    requestDispatch({
+                      type: "setHeaders",
+                      payload: newHeaders,
+                    });
+                  }}><PlusIcon /></Button>
+                </TableBody>
+              </Table>
             </TabsContent>
             <TabsContent value="query">
               <Textarea

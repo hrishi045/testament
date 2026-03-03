@@ -31,6 +31,9 @@ function App() {
         name: "Untitled",
         method: "GET",
         url: "https://httpbin.org/json",
+        headers: {
+          "User-Agent": "Testament/1.0",
+        }
       });
     }
   }, []);
@@ -76,7 +79,7 @@ function App() {
           </div>
           {openRequests.requests.map((request) => (
             <TabsContent keepMounted={true} key={request.id} value={request.id}>
-              <RequestUI method={request.method} url={request.url} />
+              <RequestUI method={request.method} url={request.url} headers={request.headers} body={request.body} />
             </TabsContent>
           ))}
         </Tabs>
