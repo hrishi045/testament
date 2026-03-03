@@ -1,8 +1,8 @@
 import type { ForgeConfig } from "@electron-forge/shared-types";
-import { MakerSquirrel } from "@electron-forge/maker-squirrel";
-import { MakerZIP } from "@electron-forge/maker-zip";
-import { MakerDeb } from "@electron-forge/maker-deb";
-import { MakerRpm } from "@electron-forge/maker-rpm";
+// import { MakerSquirrel } from "@electron-forge/maker-squirrel";
+// import { MakerZIP } from "@electron-forge/maker-zip";
+// import { MakerDeb } from "@electron-forge/maker-deb";
+// import { MakerRpm } from "@electron-forge/maker-rpm";
 // @ts-ignore — no type declarations for this package
 import MakerAppImage from "electron-forge-maker-appimage";
 import { VitePlugin } from "@electron-forge/plugin-vite";
