@@ -36,6 +36,7 @@ type RequestUIProps = {
   url: string;
   headers?: Record<string, string>;
   body?: string;
+  parameters?: Record<string, string>;
 };
 
 type RequestState = {
@@ -43,6 +44,7 @@ type RequestState = {
   url: string;
   headers?: Record<string, string>;
   body?: string;
+  parameters: Record<string, string>;
 };
 
 type RequestAction =
@@ -50,6 +52,7 @@ type RequestAction =
   | { type: "setUrl"; payload: string }
   | { type: "setHeaders"; payload: Record<string, string> }
   | { type: "setBody"; payload: string }
+  | { type: "setParameters"; payload: Record<string, string> }
   | { type: "reset" };
 
 const requestReducer = (state: RequestState, action: RequestAction): RequestState => {
@@ -68,6 +71,7 @@ const requestReducer = (state: RequestState, action: RequestAction): RequestStat
         url: "",
         headers: {},
         body: "",
+        parameters: {},
       };
     default:
       return state;
@@ -101,7 +105,7 @@ const responseReducer = (state: ResponseState, action: ResponseAction): Response
   }
 };
 
-export default function RequestUI({ method, url, headers, body }: RequestUIProps) {
+export default function RequestUI({ method, url, headers, body, parameters }: RequestUIProps) {
   const [makingRequest, setMakingRequest] = React.useState(false);
   const [isHTMLPage, setIsHTMLPage] = React.useState(false);
   const iframeDoc = React.useRef<HTMLIFrameElement>(null);
@@ -111,6 +115,7 @@ export default function RequestUI({ method, url, headers, body }: RequestUIProps
     url: url,
     headers: headers,
     body: body,
+    parameters: parameters,
   });
 
   const [response, responseDispatch] = useReducer(responseReducer, {
@@ -272,10 +277,49 @@ export default function RequestUI({ method, url, headers, body }: RequestUIProps
               </Table>
             </TabsContent>
             <TabsContent value="query">
-              <Textarea
-                placeholder="Query Parameters"
-                className="mt-4 min-h-72 max-h-72 font-mono"
-              />
+              <Table className="inline-block">
+
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-50">Parameter</TableHead>
+                    <TableHead>Value</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {request.parameters && Object.entries(request.parameters).map(([key, value]) => (
+                    <TableRow key={key}>
+                      <TableCell className="font-mono" contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => {
+                        const newKey = e.currentTarget.textContent || "";
+                        const newParameters = { ...request.parameters };
+                        delete newParameters[key];
+                        newParameters[newKey] = value;
+                        requestDispatch({
+                          type: "setParameters",
+                          payload: newParameters,
+                        });
+                      }}>
+                        {key}
+                      </TableCell>
+                      <TableCell className="font-mono text-pretty" contentEditable={true} suppressContentEditableWarning={true} onBlur={(e) => {
+                        const newParameters = e.currentTarget.textContent || "";
+                        requestDispatch({
+                          type: "setParameters",
+                          payload: { ...request.parameters, [key]: newParameters },
+                        });
+                      }}>
+                        {value}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <Button variant="secondary" onClick={() => {
+                    const newParameters = { ...request.parameters, "": "" };
+                    requestDispatch({
+                      type: "setParameters",
+                      payload: newParameters,
+                    });
+                  }}><PlusIcon /></Button>
+                </TableBody>
+              </Table>
             </TabsContent>
           </Tabs>
         </ResizablePanel>
