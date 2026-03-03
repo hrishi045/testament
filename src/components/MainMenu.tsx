@@ -1,5 +1,5 @@
 import { Menubar, MenubarMenu, MenubarTrigger } from "@/components/ui/menubar";
-import { ModeToggle } from "./mode-toggle";
+import ModeToggle from "./ModeToggle";
 
 export default function MainMenu() {
   return (

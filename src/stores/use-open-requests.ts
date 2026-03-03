@@ -8,7 +8,6 @@ interface OpenRequest {
   headers?: Record<string, string>;
   parameters?: Record<string, string>;
   body?: string;
-  beingEdited?: boolean;
 }
 
 interface OpenRequests {
@@ -16,11 +15,10 @@ interface OpenRequests {
   activeRequestId: string | null;
 
   addRequest: (request: Partial<OpenRequest>) => void;
-  removeRequest: (index: number) => void;
+  removeRequest: (id: string) => void;
   clearRequests: () => void;
   setActiveRequestId: (id: string | null) => void;
-  changeName: (index: number, newName: string) => void;
-  setBeingEdited: (index: number, beingEdited: boolean) => void;
+  changeName: (id: string, newName: string) => void;
 }
 
 const useOpenRequestsStore = create<OpenRequests>()((set) => ({
@@ -33,29 +31,25 @@ const useOpenRequestsStore = create<OpenRequests>()((set) => ({
       activeRequestId: id,
     }));
   },
-  removeRequest: (index: number) =>
+  removeRequest: (id: string) =>
     set((state) => {
       return {
-        requests: state.requests.filter((_, i) => i !== index),
+        requests: state.requests.filter((request) => request.id !== id),
         activeRequestId:
-          state.activeRequestId === state.requests[index].name ? null : state.activeRequestId,
+          state.activeRequestId === id ? null : state.activeRequestId,
       };
     }),
   clearRequests: () => set({ requests: [], activeRequestId: null }),
   setActiveRequestId: (id: string | null) => {
     set({ activeRequestId: id });
   },
-  changeName: (index: number, newName: string) => {
+  changeName: (id: string, newName: string) => {
     set((state) => {
       const updatedRequests = [...state.requests];
-      updatedRequests[index].name = newName;
-      return { requests: updatedRequests };
-    });
-  },
-  setBeingEdited: (index: number, beingEdited: boolean) => {
-    set((state) => {
-      const updatedRequests = [...state.requests];
-      updatedRequests[index].beingEdited = beingEdited;
+      const index = updatedRequests.findIndex((request) => request.id === id);
+      if (index !== -1) {
+        updatedRequests[index].name = newName;
+      }
       return { requests: updatedRequests };
     });
   },

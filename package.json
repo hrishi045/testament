@@ -59,11 +59,14 @@
     "electron-forge-maker-appimage": "github:Marcus10110/electron-forge-maker-appimage",
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
+    "oxfmt": "^0.36.0",
+    "oxlint": "^1.51.0",
     "typescript": "^5.0.0",
     "vite": "^5.4.21"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
+    "@dnd-kit/dom": "^0.3.2",
     "@dnd-kit/react": "^0.3.2",
     "@fontsource-variable/inter": "^5.2.8",
     "@tailwindcss/vite": "^4.2.1",

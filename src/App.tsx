@@ -1,13 +1,14 @@
 import React, { useEffect } from "react";
-import { ThemeProvider } from "./components/theme-provider";
-import RequestUI from "./components/request-ui";
-import MainMenu from "./components/main-menu";
+import { ThemeProvider } from "./components/ThemeProvider";
+import RequestUI from "./components/RequestUI";
+import MainMenu from "./components/MainMenu";
 import { useShallow } from "zustand/shallow";
 import useOpenRequestsStore from "./stores/use-open-requests";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Button } from "./components/ui/button";
-import { PlusIcon } from "lucide-react";
-import EditableTabsTrigger from "./components/editable-tabs-trigger";
+import { Cross, CrossIcon, PlusIcon, X } from "lucide-react";
+import EditableTabsTrigger from "./components/EditableTabsTrigger";
+import { ScrollArea } from "./components/ui/scroll-area";
 
 function App() {
   const openRequests = useOpenRequestsStore(
@@ -20,7 +21,6 @@ function App() {
       clearRequests: state.clearRequests,
       setActiveRequestId: state.setActiveRequestId,
       changeName: state.changeName,
-      setBeingEdited: state.setBeingEdited,
     })),
   );
 
@@ -55,20 +55,24 @@ function App() {
             openRequests.setActiveRequestId(value);
           }}
         >
-          <div className="flex">
-            <TabsList variant="line" className="bg-transparent border-b-2 h-12 px-4">
-              {openRequests.requests.map((request, index) => (
-                <EditableTabsTrigger
-                  id={request.id}
-                  name={request.name}
-                  onChange={(newName) => openRequests.changeName(index, newName)}
-                />
-              ))}
-            </TabsList>
+          <div className="flex justify-start">
             <Button onClick={() => createNewRequest()} variant="default">
               New
               <PlusIcon />
             </Button>
+            <ScrollArea className="whitespace-nowrap flex-1">
+              <TabsList variant="line" className="bg-transparent border-b-2">
+                {openRequests.requests.map((request, index) => (
+                  <EditableTabsTrigger
+                    key={request.id}
+                    id={request.id}
+                    name={request.name}
+                    index={index}
+                    onChange={(newName) => openRequests.changeName(request.id, newName)}
+                    onDelete={(id) => openRequests.removeRequest(id)} />
+                ))}
+              </TabsList>
+            </ScrollArea>
           </div>
           {openRequests.requests.map((request) => (
             <TabsContent keepMounted={true} key={request.id} value={request.id}>
@@ -76,8 +80,8 @@ function App() {
             </TabsContent>
           ))}
         </Tabs>
-      </div>
-    </ThemeProvider>
+      </div >
+    </ThemeProvider >
   );
 }
 
