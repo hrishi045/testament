@@ -5,14 +5,17 @@ import started from "electron-squirrel-startup";
 
 const sidecarPath = app.isPackaged
   ? path.join(process.resourcesPath, "testament-sidecar")
-  : path.join(__dirname, "../dist/testament-sidecar");
+  : path.join(__dirname, "../../sidecar/main.py");
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
 }
 
-const createWindow = () => {
+declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
+declare const MAIN_WINDOW_VITE_NAME: string;
+
+const createWindow = async () => {
   // Create the browser window.
   Menu.setApplicationMenu(null);
 
@@ -31,9 +34,11 @@ const createWindow = () => {
 
   // and load the index.html of the app.
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+    await mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
-    mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
+    await mainWindow.loadFile(
+      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
+    );
   }
 
   // Open the DevTools.
@@ -42,17 +47,20 @@ const createWindow = () => {
 
 ipcMain.handle("make-http-request", (_event, method: string, url: string) => {
   return new Promise((resolve, reject) => {
-    exec(`"${sidecarPath}" request "${url}" --method "${method}"`, (error, stdout, stderr) => {
-      if (error) {
-        reject(error.message);
-        return;
-      }
-      if (stderr) {
-        reject(stderr);
-        return;
-      }
-      resolve(stdout);
-    });
+    exec(
+      `${app.isPackaged ? "" : "python"} "${sidecarPath}" request "${url}" --method "${method}"`,
+      (error, stdout, stderr) => {
+        if (error) {
+          reject(error.message);
+          return;
+        }
+        if (stderr) {
+          reject(stderr);
+          return;
+        }
+        resolve(stdout);
+      },
+    );
   });
 });
 
