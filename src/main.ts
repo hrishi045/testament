@@ -3,6 +3,10 @@ import { exec } from "child_process";
 import path from "node:path";
 import started from "electron-squirrel-startup";
 
+const sidecarPath = app.isPackaged
+  ? path.join(process.resourcesPath, "testament-sidecar")
+  : path.join(__dirname, "../dist/testament-sidecar");
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
@@ -38,20 +42,17 @@ const createWindow = () => {
 
 ipcMain.handle("make-http-request", (_event, method: string, url: string) => {
   return new Promise((resolve, reject) => {
-    exec(
-      `python sidecar/main.py request "${url}" --method "${method}"`,
-      (error, stdout, stderr) => {
-        if (error) {
-          reject(error.message);
-          return;
-        }
-        if (stderr) {
-          reject(stderr);
-          return;
-        }
-        resolve(stdout);
-      },
-    );
+    exec(`"${sidecarPath}" request "${url}" --method "${method}"`, (error, stdout, stderr) => {
+      if (error) {
+        reject(error.message);
+        return;
+      }
+      if (stderr) {
+        reject(stderr);
+        return;
+      }
+      resolve(stdout);
+    });
   });
 });
 

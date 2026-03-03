@@ -10,7 +10,22 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "lint": "eslint --ext .ts,.tsx ."
+    "lint": "eslint --ext .ts,.tsx .",
+    "app:dir": "electron-builder --dir",
+    "app:dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.hrishi045.testament",
+    "productName": "Testament",
+    "files": [".vite/**/*", "dist/**/*", "node_modules/**/*", "package.json"],
+    "directories": {
+      "buildResources": "assets"
+    },
+    "appImage": {
+      "artifactName": "${productName}-linux-${arch}.${ext}",
+      "category": "Development",
+      "description": "A tool for testing APIs"
+    }
   },
   "keywords": [],
   "author": {
@@ -35,6 +50,7 @@
     "@typescript-eslint/parser": "^5.62.0",
     "babel-plugin-react-compiler": "^1.0.0",
     "electron": "40.6.1",
+    "electron-builder": "^26.8.1",
     "electron-forge-maker-appimage": "github:Marcus10110/electron-forge-maker-appimage",
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
